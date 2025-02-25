@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import path from "path";
 
 // Verify required environment variables
 if (!process.env.OPENAI_API_KEY) {
@@ -15,6 +16,17 @@ if (!process.env.DATABASE_URL) {
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Serve static files from the dist/public directory
+app.use(express.static(path.join(__dirname, "../dist/public")));
+
+// Ensure all routes not matched by API fall back to index.html
+app.get("*", (req, res) => {
+  // Skip API routes
+  if (!req.path.startsWith("/api/")) {
+    res.sendFile(path.join(__dirname, "../dist/public/index.html"));
+  }
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
