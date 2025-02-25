@@ -5,6 +5,9 @@ import { vectorStore } from "./lib/vectorStore";
 import { generateResponse, generateEmbeddings } from "./lib/openai";
 import { insertMessageSchema } from "@shared/schema";
 import { z } from "zod";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
+import { messages } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   try {
@@ -18,10 +21,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Continue starting the server even if initial data load fails
   }
 
-  app.get("/api/messages", async (_req, res) => {
+  app.get("/api/messages", async (req, res) => {
     try {
-      const messages = await storage.getMessages();
-      res.json(messages);
+      const userId = req.query.user_id as string;
+
+      if (!userId) {
+        return res.status(400).json({ message: "user_id is required" });
+      }
+
+      // Force a direct query to bypass any potential issues in the storage layer
+      const result = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.user_id, userId));
+
+      res.json(result);
     } catch (error) {
       console.error("Error fetching messages:", error);
       res.status(500).json({ message: "Failed to fetch messages" });
@@ -30,9 +44,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/messages", async (req, res) => {
     try {
+      const { content, user_id } = req.body;
+      if (!user_id) {
+        return res.status(400).json({ message: "user_id is required" });
+      }
+
       const userMessage = insertMessageSchema.parse({
-        content: req.body.content,
-        role: "user"
+        content,
+        role: "user",
+        user_id,
       });
 
       // Store user message
@@ -45,23 +65,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const relevantData = await vectorStore.findSimilar(queryEmbeddings);
 
       // Get chat history
-      const messages = await storage.getMessages();
+      const messages = await storage.getMessages(user_id);
 
       // Generate AI response
       const aiResponse = await generateResponse(
-        messages.map(m => ({ role: m.role, content: m.content })),
+        messages.map((m) => ({ role: m.role, content: m.content })),
         relevantData
       );
 
       // Store AI response
       const savedAiMessage = await storage.createMessage({
         content: aiResponse,
-        role: "assistant"
+        role: "assistant",
+        user_id,
       });
 
       res.json({
         userMessage: savedUserMessage,
-        aiMessage: savedAiMessage
+        aiMessage: savedAiMessage,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {

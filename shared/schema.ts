@@ -7,6 +7,7 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
   role: text("role", { enum: ["user", "assistant"] }).notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
+  user_id: text("user_id").notNull(),
 });
 
 export const activities = pgTable("activities", {
@@ -29,13 +30,16 @@ export const activities = pgTable("activities", {
 export const insertMessageSchema = createInsertSchema(messages).pick({
   content: true,
   role: true,
+  user_id: true,
 });
 
-export const insertActivitySchema = createInsertSchema(activities).omit({
-  id: true,
-}).extend({
-  originalId: z.string().optional(),
-});
+export const insertActivitySchema = createInsertSchema(activities)
+  .omit({
+    id: true,
+  })
+  .extend({
+    originalId: z.string().optional(),
+  });
 
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;

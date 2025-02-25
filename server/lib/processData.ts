@@ -17,10 +17,10 @@ async function processNestedData() {
     }
   }
 
-  console.log(`Found ${total} activities to process`);
-
   for (const [category, categoryData] of Object.entries(nestedData)) {
-    for (const [subcategory, subcategoryData] of Object.entries(categoryData.subcategories)) {
+    for (const [subcategory, subcategoryData] of Object.entries(
+      categoryData.subcategories
+    )) {
       const batch: (InsertActivity & { embeddings: number[] })[] = [];
 
       for (const activity of subcategoryData.activities) {
@@ -32,7 +32,9 @@ async function processNestedData() {
             activity.information,
             category,
             subcategory,
-          ].filter(Boolean).join("\n");
+          ]
+            .filter(Boolean)
+            .join("\n");
 
           // Generate embeddings
           const embeddings = await generateEmbeddings(contentForEmbedding);
@@ -58,7 +60,6 @@ async function processNestedData() {
           // When batch is full or it's the last item, store the batch
           if (batch.length >= BATCH_SIZE || processed === total) {
             await storage.createManyActivities(batch);
-            console.log(`Processed ${processed}/${total} activities`);
             batch.length = 0; // Clear the batch
           }
         } catch (error) {

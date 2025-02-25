@@ -1,7 +1,8 @@
+import "dotenv/config";
 import OpenAI from "openai";
 import { type Activity } from "@shared/schema";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+export const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const CHAT_MODEL = "gpt-4o";
@@ -17,18 +18,22 @@ When asked about who you are, explain that you're a specialized AI concierge for
 
 For activity and venue recommendations, use the following tourism information to provide detailed suggestions:
 
-${relevantData.map(d => {
-  const details = [
-    `Name: ${d.name}`,
-    `Type: ${d.category} - ${d.subcategory}`,
-    d.description ? `Description: ${d.description}` : null,
-    d.information ? `Information: ${d.information}` : null,
-    d.timing_content ? `Timing: ${d.timing_content}` : null,
-    d.pricing_content ? `Pricing: ${d.pricing_content}` : null,
-    d.address ? `Location: ${d.address}` : null
-  ].filter(Boolean).join('\n');
-  return `---\n${details}\n---`;
-}).join('\n')}
+${relevantData
+  .map((d) => {
+    const details = [
+      `Name: ${d.name}`,
+      `Type: ${d.category} - ${d.subcategory}`,
+      d.description ? `Description: ${d.description}` : null,
+      d.information ? `Information: ${d.information}` : null,
+      d.timing ? `Timing: ${d.timing}` : null,
+      d.pricing ? `Pricing: ${d.pricing}` : null,
+      d.address ? `Location: ${d.address}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    return `---\n${details}\n---`;
+  })
+  .join("\n")}
 
 Important guidelines:
 1. Format venue names in markdown (e.g., **Venue Name**)
@@ -44,13 +49,16 @@ If no relevant information is found, politely explain and suggest asking about o
       model: CHAT_MODEL,
       messages: [
         { role: "system", content: baseSystemPrompt },
-        ...messages.map(m => ({ role: m.role, content: m.content }))
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
       ],
       temperature: 0.7,
-      max_tokens: 1000
+      max_tokens: 1000,
     });
 
-    return response.choices[0].message.content || "I apologize, but I couldn't generate a response.";
+    return (
+      response.choices[0].message.content ||
+      "I apologize, but I couldn't generate a response."
+    );
   } catch (error) {
     console.error("OpenAI API error:", error);
     throw new Error("Failed to generate response");

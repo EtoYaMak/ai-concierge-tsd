@@ -3,9 +3,36 @@ import { type Message } from "@shared/schema";
 import MessageItem from "./message-item";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function ChatMessages() {
+interface ChatMessagesProps {
+  userId: string | null;
+}
+
+export default function ChatMessages({ userId }: ChatMessagesProps) {
   const { data: messages, isLoading } = useQuery<Message[]>({
-    queryKey: ["/api/messages"],
+    queryKey: ["/api/messages", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+
+      try {
+        // Ensure userId is properly encoded in the URL
+        const url = new URL("/api/messages", window.location.origin);
+        url.searchParams.append("user_id", userId);
+
+        const response = await fetch(url.toString());
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          console.error("Error fetching messages:", response.status, errorData);
+          throw new Error(`Failed to fetch messages: ${response.statusText}`);
+        }
+
+        return response.json();
+      } catch (error) {
+        console.error("Failed to fetch messages:", error);
+        throw error;
+      }
+    },
+    enabled: !!userId,
   });
 
   if (isLoading) {
