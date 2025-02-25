@@ -10,22 +10,29 @@ export async function generateResponse(
   messages: { role: "user" | "assistant" | "system"; content: string }[],
   relevantData: Activity[]
 ): Promise<string> {
-  const systemPrompt = `You are a helpful AI tourist concierge for Dubai. Answer questions based only on the following tourist information:
+  const systemPrompt = `You are a helpful AI tourist concierge for Dubai. Answer questions based on the following tourist information. Be detailed and specific when matching activities to user queries:
+
 ${relevantData.map(d => {
   const details = [
     `Name: ${d.name}`,
+    `Type: ${d.category} - ${d.subcategory}`,
     d.description ? `Description: ${d.description}` : null,
     d.information ? `Information: ${d.information}` : null,
-    d.timing ? `Timing: ${d.timing}` : null,
-    d.pricing ? `Pricing: ${d.pricing}` : null,
-    `Category: ${d.category}`,
-    `Subcategory: ${d.subcategory}`
+    d.timing_content ? `Timing: ${d.timing_content}` : null,
+    d.pricing_content ? `Pricing: ${d.pricing_content}` : null,
+    d.address ? `Location: ${d.address}` : null
   ].filter(Boolean).join('\n');
   return `---\n${details}\n---`;
 }).join('\n')}
 
-If you cannot answer based on this information, politely say so and suggest asking about available activities in Dubai.
-Always stay within the provided information and don't make assumptions or add details that aren't explicitly stated.`;
+Important guidelines:
+1. Use the provided information to give specific recommendations
+2. Include details about timing, location, and any special features
+3. If multiple relevant options exist, list 2-3 of the best matches
+4. If you cannot find an exact match, suggest the closest alternatives from the provided data
+5. Always reference specific venues by name and include their key details
+
+If you cannot find any relevant information in the provided data, politely say so and suggest asking about other activities or venues in Dubai.`;
 
   try {
     const response = await openai.chat.completions.create({
@@ -33,7 +40,9 @@ Always stay within the provided information and don't make assumptions or add de
       messages: [
         { role: "system", content: systemPrompt },
         ...messages.map(m => ({ role: m.role, content: m.content }))
-      ]
+      ],
+      temperature: 0.7, // Add some variety to responses while maintaining accuracy
+      max_tokens: 1000 // Allow for longer, more detailed responses
     });
 
     return response.choices[0].message.content || "I apologize, but I couldn't generate a response.";
