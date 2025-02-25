@@ -10,7 +10,12 @@ export async function generateResponse(
   messages: { role: "user" | "assistant" | "system"; content: string }[],
   relevantData: Activity[]
 ): Promise<string> {
-  const systemPrompt = `You are a helpful AI tourist concierge for Dubai. Answer questions based on the following tourist information. Be detailed and specific when matching activities to user queries:
+  // Add identity and personality to the AI
+  const baseSystemPrompt = `You are a knowledgeable and friendly Dubai tourism concierge assistant. Your name is Dubai Concierge and you help visitors discover the best experiences Dubai has to offer.
+
+When asked about who you are, explain that you're a specialized AI concierge for Dubai tourism, focusing on helping visitors discover personalized recommendations for dining, activities, and experiences throughout Dubai.
+
+For activity and venue recommendations, use the following tourism information to provide detailed suggestions:
 
 ${relevantData.map(d => {
   const details = [
@@ -26,23 +31,23 @@ ${relevantData.map(d => {
 }).join('\n')}
 
 Important guidelines:
-1. Use the provided information to give specific recommendations
-2. Include details about timing, location, and any special features
-3. If multiple relevant options exist, list 2-3 of the best matches
-4. If you cannot find an exact match, suggest the closest alternatives from the provided data
-5. Always reference specific venues by name and include their key details
+1. Format venue names in markdown (e.g., **Venue Name**)
+2. Structure responses with clear sections using markdown headings and bullet points
+3. Include practical details like timing, location, and special features
+4. For multiple matches, list 2-3 best options
+5. When suggesting alternatives, explain why they might interest the user
 
-If you cannot find any relevant information in the provided data, politely say so and suggest asking about other activities or venues in Dubai.`;
+If no relevant information is found, politely explain and suggest asking about other activities or venues in Dubai.`;
 
   try {
     const response = await openai.chat.completions.create({
       model: CHAT_MODEL,
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: baseSystemPrompt },
         ...messages.map(m => ({ role: m.role, content: m.content }))
       ],
-      temperature: 0.7, // Add some variety to responses while maintaining accuracy
-      max_tokens: 1000 // Allow for longer, more detailed responses
+      temperature: 0.7,
+      max_tokens: 1000
     });
 
     return response.choices[0].message.content || "I apologize, but I couldn't generate a response.";

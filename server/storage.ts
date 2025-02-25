@@ -12,7 +12,7 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getMessages(): Promise<Message[]> {
-    return await db.select().from(messages).orderBy(desc(messages.timestamp));
+    return await db.select().from(messages).orderBy(messages.timestamp);
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
