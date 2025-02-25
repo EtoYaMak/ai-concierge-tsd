@@ -1,12 +1,13 @@
-import { type Message, type InsertMessage, type TouristData, type InsertTouristData, messages, touristData } from "@shared/schema";
+import { type Message, type InsertMessage, type Activity, type InsertActivity, messages, activities } from "@shared/schema";
 import { db } from "./db";
 import { desc } from "drizzle-orm";
 
 export interface IStorage {
   getMessages(): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
-  getTouristData(): Promise<TouristData[]>;
-  createTouristData(data: InsertTouristData & { embeddings: number[] }): Promise<TouristData>;
+  getActivities(): Promise<Activity[]>;
+  createActivity(data: InsertActivity & { embeddings: number[] }): Promise<Activity>;
+  createManyActivities(data: (InsertActivity & { embeddings: number[] })[]): Promise<Activity[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -22,16 +23,23 @@ export class DatabaseStorage implements IStorage {
     return newMessage;
   }
 
-  async getTouristData(): Promise<TouristData[]> {
-    return await db.select().from(touristData);
+  async getActivities(): Promise<Activity[]> {
+    return await db.select().from(activities);
   }
 
-  async createTouristData(data: InsertTouristData & { embeddings: number[] }): Promise<TouristData> {
-    const [newData] = await db
-      .insert(touristData)
+  async createActivity(data: InsertActivity & { embeddings: number[] }): Promise<Activity> {
+    const [newActivity] = await db
+      .insert(activities)
       .values(data)
       .returning();
-    return newData;
+    return newActivity;
+  }
+
+  async createManyActivities(data: (InsertActivity & { embeddings: number[] })[]): Promise<Activity[]> {
+    return await db
+      .insert(activities)
+      .values(data)
+      .returning();
   }
 }
 

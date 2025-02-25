@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { type TouristData } from "@shared/schema";
+import { type Activity } from "@shared/schema";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -8,12 +8,24 @@ const CHAT_MODEL = "gpt-4o";
 
 export async function generateResponse(
   messages: { role: "user" | "assistant" | "system"; content: string }[],
-  relevantData: TouristData[]
+  relevantData: Activity[]
 ): Promise<string> {
-  const systemPrompt = `You are a helpful AI tourist concierge. Answer questions based only on the following tourist information:
-${relevantData.map(d => `- ${d.name}: ${d.description}`).join('\n')}
+  const systemPrompt = `You are a helpful AI tourist concierge for Dubai. Answer questions based only on the following tourist information:
+${relevantData.map(d => {
+  const details = [
+    `Name: ${d.name}`,
+    d.description ? `Description: ${d.description}` : null,
+    d.information ? `Information: ${d.information}` : null,
+    d.timing ? `Timing: ${d.timing}` : null,
+    d.pricing ? `Pricing: ${d.pricing}` : null,
+    `Category: ${d.category}`,
+    `Subcategory: ${d.subcategory}`
+  ].filter(Boolean).join('\n');
+  return `---\n${details}\n---`;
+}).join('\n')}
 
-If you cannot answer based on this information, politely say so and suggest asking about available attractions.`;
+If you cannot answer based on this information, politely say so and suggest asking about available activities in Dubai.
+Always stay within the provided information and don't make assumptions or add details that aren't explicitly stated.`;
 
   try {
     const response = await openai.chat.completions.create({

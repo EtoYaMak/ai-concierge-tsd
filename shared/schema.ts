@@ -9,11 +9,20 @@ export const messages = pgTable("messages", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
-export const touristData = pgTable("tourist_data", {
+export const activities = pgTable("activities", {
   id: serial("id").primaryKey(),
+  originalId: text("original_id"),
   name: text("name").notNull(),
-  description: text("description").notNull(),
+  slug: text("slug"),
+  address: text("address"),
   category: text("category").notNull(),
+  subcategory: text("subcategory").notNull(),
+  description: text("description"),
+  information: text("information"),
+  timing: text("timing_content"),
+  pricing: text("pricing_content"),
+  booking_type: text("booking_type"),
+  redirect_url: text("redirect_url"),
   embeddings: jsonb("embeddings").$type<number[]>(),
 });
 
@@ -22,13 +31,13 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   role: true,
 });
 
-export const insertTouristDataSchema = createInsertSchema(touristData).pick({
-  name: true,
-  description: true,
-  category: true,
+export const insertActivitySchema = createInsertSchema(activities).omit({
+  id: true,
+}).extend({
+  originalId: z.string().optional(),
 });
 
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
-export type TouristData = typeof touristData.$inferSelect;
-export type InsertTouristData = z.infer<typeof insertTouristDataSchema>;
+export type Activity = typeof activities.$inferSelect;
+export type InsertActivity = z.infer<typeof insertActivitySchema>;
