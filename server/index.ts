@@ -46,7 +46,8 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
+// Create the app function to be used in both development and on Vercel
+export const createApp = async () => {
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -57,21 +58,32 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  if (app.get("env") === "development") {
+  if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  const port = 5000;
-  server.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-    }
-  );
-})();
+  return { app, server };
+};
+
+// Only start the server if this file is run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const port = process.env.PORT || 5000;
+
+  createApp().then(({ server }) => {
+    server.listen(
+      {
+        port,
+        host: "0.0.0.0",
+        reusePort: true,
+      },
+      () => {
+        log(`serving on port ${port}`);
+      }
+    );
+  });
+}
+
+// For Vercel serverless deployment
+export default app;

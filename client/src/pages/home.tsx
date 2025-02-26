@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import ChatMessages from "@/components/chat/chat-messages";
 import ChatInput from "@/components/chat/chat-input";
 import { UserIdentifier } from "@/components/UserIdentifier";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -17,8 +18,21 @@ export default function Home() {
             <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
               AI Concierge
             </h1>
-            <span className="text-gray-950 text-base font-bold">#{userId}</span>
+            {userId && (
+              <span className=" text-base font-bold">
+                #{userId} <br />{" "}
+                <Button
+                  className="text-gray-950 text-base font-bold"
+                  onClick={() => {
+                    localStorage.removeItem("chatUserId");
+                    setUserId(null);
+                  }}
+                >Logout</Button>
+              </span>
+            )}
+
           </span>
+
           <p className="text-muted-foreground text-sm">
             Your personal guide to Dubai's finest experiences
           </p>
